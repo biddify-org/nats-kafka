@@ -15,7 +15,8 @@ build: nats-kafka
 
 .PHONY: install
 install: nats-kafka
-	mv $< $(shell go env GOPATH)/bin
+	mkdir -p /opt/nats-kafka
+	cp $< /opt/nats-kafka/bin
 
 .PHONY: install-tools
 install-tools:
