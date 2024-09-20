@@ -175,7 +175,7 @@ func NewConsumer(cc conf.ConnectorConfig, dialTimeout time.Duration) (Consumer, 
 		}
 		cons.c = c
 
-		pc, err := cons.c.ConsumePartition(cc.Topic, int32(cc.Partition), sarama.OffsetOldest)
+		pc, err := cons.c.ConsumePartition(cc.Topic, int32(cc.Partition), sarama.OffsetNewest)
 		if err != nil {
 			return nil, err
 		}
