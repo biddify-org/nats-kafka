@@ -153,9 +153,14 @@ type NATSCallback func(msg kafka.Message) error
 type ShutdownCallback func() error
 
 func (conn *BridgeConnector) jetStreamMessageHandler(msg kafka.Message) error {
+	conn.bridge.logger.Debugf("conn.dest(msg): %s", conn.dest(msg))
+	conn.bridge.logger.Debugf("length: %d", len(msg.Value))
+	conn.bridge.logger.Debugf("preview: %s", string(msg.Value[:170]))
+
 	nMsg := nats.NewMsg(conn.dest(msg))
 	nMsg.Header = conn.convertFromKafkaToNatsHeaders(msg.Headers)
 	nMsg.Data = msg.Value
+
 	_, err := conn.bridge.JetStream().PublishMsg(nMsg)
 	return err
 }
@@ -549,6 +554,45 @@ func (conn *BridgeConnector) initDestTemplate(destTpl string) {
 				return s[start:]
 			}
 			return s[start:end]
+		},
+		"extractFieldBytes": func(fieldName string, msg interface{}) string {
+			var data []byte
+			switch m := msg.(type) {
+			case kafka.Message:
+				data = m.Value
+			case *nats.Msg:
+				data = m.Data
+			case *stan.Msg:
+				data = m.Data
+			default:
+				return ""
+			}
+
+			conn.bridge.logger.Debugf("Searching for %s in payload", fieldName)
+			fieldIndex := bytes.Index(data, []byte(fieldName))
+			if fieldIndex == -1 {
+				conn.bridge.logger.Debugf("%s not found in payload", fieldName)
+				return ""
+			}
+
+			conn.bridge.logger.Debugf("%s found at index: %d", fieldName, fieldIndex)
+			startIndex := fieldIndex + len(fieldName)
+			// Skip any whitespace, colon, and quotation marks after the field name
+			for startIndex < len(data) && (data[startIndex] == ' ' || data[startIndex] == ':' || data[startIndex] == '"') {
+				startIndex++
+			}
+			endIndex := bytes.IndexAny(data[startIndex:], ",}")
+			if endIndex == -1 {
+				endIndex = len(data) - startIndex
+			} else {
+				endIndex += startIndex
+			}
+
+			fieldValue := string(bytes.TrimSpace(data[startIndex:endIndex]))
+			conn.bridge.logger.Debugf("Extracted field value: %s", fieldValue)
+			// Remove surrounding quotes if present
+			fieldValue = strings.Trim(fieldValue, `"`)
+			return fieldValue
 		},
 	}
 	var err error

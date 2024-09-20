@@ -4,8 +4,11 @@ export GODEBUG=x509ignoreCN=0
 
 goSrc := $(shell find . -name "*.go")
 
+# Define common build flags
+GO_BUILD_FLAGS := -buildvcs=false
+
 nats-kafka: $(goSrc)
-	go build -o $@
+	go build $(GO_BUILD_FLAGS) -o $@
 
 .PHONY: build
 build: nats-kafka
@@ -79,7 +82,7 @@ run-test-codecov:
 	rm coverage.out
 
 nats-kafka.docker: $(goSrc)
-	CGO_ENABLED=0 go build -o $@ -tags timetzdata \
+	CGO_ENABLED=0 go build $(GO_BUILD_FLAGS) -o $@ -tags timetzdata \
 		-ldflags "-X github.com/nats-io/nats-kafka/server/core.Version=$(VERSION)"
 
 .PHONY: docker

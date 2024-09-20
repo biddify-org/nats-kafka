@@ -16,3 +16,4 @@ nats-kafka
 
 # IntelliJ and GoLand
 .idea
+conf/conf
