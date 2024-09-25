@@ -556,6 +556,8 @@ func (conn *BridgeConnector) initDestTemplate(destTpl string) {
 			return s[start:end]
 		},
 		"extractFieldBytes": func(fieldName string, msg interface{}) string {
+			startTime := time.Now()
+			conn.bridge.Logger().Noticef("Extracting field %s at %s", fieldName, startTime.UnixNano()/int64(time.Millisecond))
 			var data []byte
 			switch m := msg.(type) {
 			case kafka.Message:
@@ -592,6 +594,9 @@ func (conn *BridgeConnector) initDestTemplate(destTpl string) {
 			conn.bridge.logger.Debugf("Extracted field value: %s", fieldValue)
 			// Remove surrounding quotes if present
 			fieldValue = strings.Trim(fieldValue, `"`)
+			endTime := time.Now()
+			duration := endTime.Sub(startTime)
+			conn.bridge.Logger().Noticef("Completed extraction of field %s. Duration: %v, Timestamp: %d", fieldName, duration, endTime.UnixNano()/int64(time.Millisecond))
 			return fieldValue
 		},
 	}
